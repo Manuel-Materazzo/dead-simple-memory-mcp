@@ -708,6 +708,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "mcp" },
     { name = "sentence-transformers" },
     { name = "sqlite-vec" },
@@ -724,6 +725,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.109.0" },
+    { name = "jinja2", specifier = ">=3.1.0" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "sentence-transformers", specifier = ">=2.2.0" },
     { name = "sqlite-vec", specifier = ">=0.1.1" },

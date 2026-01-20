@@ -23,6 +23,7 @@ dependencies = [
     "sentence-transformers>=2.2.0",
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
+    "jinja2>=3.1.0",
 ]
 
 [project.scripts]
@@ -43,7 +44,6 @@ target-version = "py310"
 select = ["E", "F", "I", "W"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/mcp_memory_server/web.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"
