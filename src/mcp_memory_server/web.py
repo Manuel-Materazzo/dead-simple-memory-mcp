@@ -392,7 +392,8 @@ async def root() -> str:  # noqa: E501
         }
 
         function startEdit(id) {
-            if (editingId) cancelEdit();
+            if (editingId === id) return;
+            if (editingId) resetEditingState();
             editingId = id;
             const el = document.getElementById(`content-${id}`);
             const text = el.textContent;
@@ -407,6 +408,24 @@ async def root() -> str:  # noqa: E501
                 <button class="btn btn-small" onclick="saveEdit(${id})">Save</button>
                 <button class="btn btn-small" onclick="cancelEdit()">Cancel</button>
             `;
+        }
+
+        function resetEditingState() {
+            if (!editingId) return;
+            const el = document.getElementById(`content-${editingId}`);
+            if (el) {
+                el.contentEditable = false;
+                el.classList.remove('editing');
+                const card = el.closest('.memory-card');
+                if (card) {
+                    const actions = card.querySelector('.memory-actions');
+                    actions.innerHTML = `
+                        <button class="btn btn-small" onclick="startEdit(${editingId})">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteMemory(${editingId})">Delete</button>
+                    `;
+                }
+            }
+            editingId = null;
         }
 
         async function saveEdit(id) {
@@ -490,6 +509,7 @@ async def root() -> str:  # noqa: E501
         }
 
         function openModal() {
+            if (editingId) resetEditingState();
             document.getElementById('addModal').classList.remove('hidden');
             document.getElementById('newMemoryContent').value = '';
             document.getElementById('conflictWarning').style.display = 'none';
