@@ -169,3 +169,21 @@ class TestWebAPI:
         data2 = response2.json()
         assert len(data2["memories"]) == 2
         assert data2["page"] == 2
+
+    def test_stats_endpoint(self, client: TestClient) -> None:
+        """Test the statistics endpoint."""
+        response = client.get("/api/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_memories"] == 0
+        assert "storage_bytes" in data
+        assert "storage_human" in data
+        assert "embedding_model" in data
+        assert data["embedding_dimensions"] == 384
+
+        client.post("/api/memories", json={"content": "Test memory", "force": True})
+
+        response2 = client.get("/api/stats")
+        data2 = response2.json()
+        assert data2["total_memories"] == 1
+        assert data2["latest_activity"] is not None

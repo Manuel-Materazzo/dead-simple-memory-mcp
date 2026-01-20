@@ -13,6 +13,7 @@ from starlette.requests import Request
 from mcp_memory_server.database import (
     create_memory,
     delete_memory,
+    get_statistics,
     list_memories,
     search_memories,
     update_memory,
@@ -95,6 +96,12 @@ async def api_delete_memory(memory_id: int) -> dict[str, Any]:
 async def health() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/api/stats")
+async def api_stats() -> dict[str, Any]:
+    """Get memory database statistics."""
+    return get_statistics()
 
 
 @app.get("/", response_class=HTMLResponse)

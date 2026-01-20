@@ -114,6 +114,7 @@ async function saveEdit(id) {
         showToast('Memory updated', 'success');
         editingId = null;
         isSearchMode ? searchMemories(document.getElementById('searchInput').value) : fetchMemories(currentPage);
+        fetchStats();
     } catch (e) {
         showToast('Failed to update memory', 'error');
     }
@@ -144,6 +145,7 @@ async function confirmDelete() {
         if (!res.ok) throw new Error('Failed to delete');
         showToast('Memory deleted', 'success');
         isSearchMode ? searchMemories(document.getElementById('searchInput').value) : fetchMemories(currentPage);
+        fetchStats();
     } catch (e) {
         showToast('Failed to delete memory', 'error');
     }
@@ -172,6 +174,7 @@ async function createMemory(force = false) {
         closeModal();
         showToast('Memory created', 'success');
         fetchMemories(1);
+        fetchStats();
     } catch (e) {
         showToast('Failed to create memory', 'error');
     }
@@ -212,6 +215,38 @@ function updateStats(total, isSearch = false) {
     document.getElementById('stats').textContent = isSearch
         ? `${total} result${total !== 1 ? 's' : ''} found`
         : `${total} memor${total !== 1 ? 'ies' : 'y'}`;
+}
+
+async function fetchStats() {
+    try {
+        const res = await fetch('/api/stats');
+        const stats = await res.json();
+        document.getElementById('statMemories').textContent = stats.total_memories;
+        document.getElementById('statStorage').textContent = stats.storage_human;
+        document.getElementById('statActivity').textContent = stats.latest_activity 
+            ? formatRelativeTime(stats.latest_activity) 
+            : 'Never';
+        document.getElementById('statModel').textContent = stats.embedding_model;
+    } catch (e) {
+        console.error('Failed to fetch stats:', e);
+    }
+}
+
+function formatRelativeTime(dateStr) {
+    if (!dateStr) return 'Never';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    
+    if (diffSec < 60) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHour < 24) return `${diffHour}h ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return date.toLocaleDateString();
 }
 
 function updatePagination() {
@@ -280,3 +315,4 @@ document.getElementById('deleteModal').addEventListener('click', (e) => {
 
 // Initialize
 fetchMemories(1);
+fetchStats();

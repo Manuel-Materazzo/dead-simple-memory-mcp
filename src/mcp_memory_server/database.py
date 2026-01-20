@@ -266,3 +266,54 @@ def list_memories(page: int = 1, limit: int = 50) -> dict[str, Any]:
         "page": page,
         "total_pages": total_pages,
     }
+
+
+def get_statistics() -> dict[str, Any]:
+    """Get memory database statistics."""
+    from mcp_memory_server.config import get_db_path, get_embedding_model
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as total FROM memories")
+    total_count = cursor.fetchone()["total"]
+
+    cursor.execute(
+        "SELECT MAX(created_at) as latest_created, MAX(updated_at) as latest_updated FROM memories"
+    )
+    row = cursor.fetchone()
+    latest_created = row["latest_created"] if row else None
+    latest_updated = row["latest_updated"] if row else None
+
+    latest_activity = None
+    if latest_created or latest_updated:
+        if latest_created and latest_updated:
+            latest_activity = max(latest_created, latest_updated)
+        else:
+            latest_activity = latest_created or latest_updated
+
+    conn.close()
+
+    db_path = get_db_path()
+    storage_bytes = 0
+    if db_path.exists():
+        storage_bytes = db_path.stat().st_size
+
+    return {
+        "total_memories": total_count,
+        "storage_bytes": storage_bytes,
+        "storage_human": _format_bytes(storage_bytes),
+        "latest_activity": latest_activity,
+        "embedding_model": get_embedding_model(),
+        "embedding_dimensions": EMBEDDING_DIM,
+    }
+
+
+def _format_bytes(size_bytes: int) -> str:
+    """Format bytes as human-readable string."""
+    size = float(size_bytes)
+    for unit in ["B", "KB", "MB", "GB"]:
+        if size < 1024:
+            return f"{size:.1f} {unit}" if unit != "B" else f"{int(size)} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
