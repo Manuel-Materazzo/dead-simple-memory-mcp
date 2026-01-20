@@ -40,8 +40,8 @@ class TestMemoryOperations:
 
     def test_create_memory_duplicate_detection(self):
         """Test duplicate detection when creating memories."""
-        create_memory("I enjoy writing tests", force=True)
-        result = create_memory("I enjoy writing tests")
+        create_memory("I love dogs", force=True)
+        result = create_memory("I like dogs a lot")
         assert result["status"] == "conflict_detected"
         assert "similar_memories" in result
 

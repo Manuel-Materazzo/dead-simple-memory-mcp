@@ -32,13 +32,17 @@ def start_model_loading() -> None:
 
 
 def get_embedding(text: str) -> list[float]:
-    """Get the embedding for a text string. Blocks until model is ready."""
+    """Get the embedding for a text string. Blocks until model is ready.
+
+    Returns a normalized embedding (L2 norm = 1) so that L2 distance
+    is equivalent to cosine distance for KNN queries in sqlite-vec.
+    """
     _model_ready.wait()
     if _model_error:
         raise _model_error
     if _model is None:
         raise RuntimeError("Model not loaded")
-    embedding = _model.encode(text, convert_to_numpy=True)
+    embedding = _model.encode(text, convert_to_numpy=True, normalize_embeddings=True)
     result: list[float] = embedding.tolist()
     return result
 

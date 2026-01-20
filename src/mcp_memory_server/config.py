@@ -30,4 +30,4 @@ def get_embedding_model() -> str:
 
 def get_duplicate_threshold() -> float:
     """Get the duplicate detection threshold from environment or use default."""
-    return float(os.getenv("MEMORY_DUPLICATE_THRESHOLD", "0.85"))
+    return float(os.getenv("MEMORY_DUPLICATE_THRESHOLD", "0.7"))

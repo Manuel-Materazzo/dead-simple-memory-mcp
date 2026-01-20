@@ -62,13 +62,13 @@ List all memories with pagination.
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
+| Variable | Default                     | Description |
+|----------|-----------------------------|-------------|
 | `MEMORY_DB_PATH` | `~/.mcp-memory/memories.db` | SQLite database location |
-| `MEMORY_UI_PORT` | `6277` | Web UI port |
-| `MEMORY_UI_ENABLED` | `true` | Enable/disable web UI |
-| `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Embedding model name |
-| `MEMORY_DUPLICATE_THRESHOLD` | `0.85` | Similarity threshold for duplicate detection |
+| `MEMORY_UI_PORT` | `6277`                      | Web UI port |
+| `MEMORY_UI_ENABLED` | `true`                      | Enable/disable web UI |
+| `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2`          | Embedding model name |
+| `MEMORY_DUPLICATE_THRESHOLD` | `0.7`                       | Similarity threshold for duplicate detection |
 
 ### LM Studio Configuration (mcp.json)
 

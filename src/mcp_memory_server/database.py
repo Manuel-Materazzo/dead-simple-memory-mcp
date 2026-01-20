@@ -80,7 +80,9 @@ def search_memories(
     results = []
     for row in vec_results:
         distance = row["distance"]
-        similarity = 1 - distance
+        # For normalized embeddings, L2 distance relates to cosine similarity by:
+        # cosine_similarity = 1 - (L2_distance² / 2)
+        similarity = 1 - (distance * distance / 2)
         if similarity < similarity_threshold:
             continue
 
