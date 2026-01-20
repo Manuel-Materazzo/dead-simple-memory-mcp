@@ -42,7 +42,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "similarity_threshold": {
                         "type": "number",
-                        "description": "Minimum cosine similarity 0-1 (default: 0.5, env: MEMORY_SEARCH_THRESHOLD)",
+                        "description": "Minimum cosine similarity 0-1 (default: 0.5)",
                         "default": 0.5,
                     },
                 },
@@ -110,7 +110,7 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="list_memories",
-            description="List all memories with pagination",
+            description="List all memories you saved so far with pagination",
             inputSchema={
                 "type": "object",
                 "properties": {
