@@ -27,7 +27,7 @@ Search memories using vector similarity.
 **Parameters:**
 - `query` (string, required): Search query text
 - `limit` (integer, optional, default=5): Number of results
-- `similarity_threshold` (float, optional, default=0.7): Minimum cosine similarity (0-1)
+- `similarity_threshold` (float, optional, default=0.5): Minimum cosine similarity (0-1)
 
 ### `write_memory`
 Store a new memory with automatic duplicate detection.
@@ -69,15 +69,20 @@ List all memories with pagination.
 | `MEMORY_UI_ENABLED` | `true`                      | Enable/disable web UI |
 | `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2`          | Embedding model name |
 | `MEMORY_DUPLICATE_THRESHOLD` | `0.7`                       | Similarity threshold for duplicate detection |
+| `MEMORY_SEARCH_THRESHOLD` | `0.5`                       | Default similarity threshold for search queries |
 
 ### LM Studio Configuration (mcp.json)
 
 ```json
 {
   "mcpServers": {
-    "memory": {
+    "dead-simple-memory": {
       "command": "uvx",
-      "args": ["mcp-memory-server"],
+      "args": [
+        "--from",
+        "git+https://github.com/Manuel-Materazzo/dead-simple-memory-mcp.git",
+        "mcp-memory-server"
+      ],
       "env": {
         "MEMORY_DB_PATH": "/Users/username/.mcp-memory/memories.db"
       }
