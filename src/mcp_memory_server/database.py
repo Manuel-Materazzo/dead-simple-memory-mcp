@@ -53,7 +53,7 @@ def init_database() -> None:
 
 
 def search_memories(
-    query: str, limit: int = 5, similarity_threshold: float = 0.7
+    query: str, limit: int = 5, similarity_threshold: float = 0.5
 ) -> list[dict[str, Any]]:
     """Search memories using vector similarity."""
     query_embedding = get_embedding(query)

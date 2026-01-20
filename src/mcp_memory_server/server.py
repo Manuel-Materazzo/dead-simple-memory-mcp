@@ -7,7 +7,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
-from mcp_memory_server.config import get_ui_port, is_ui_enabled
+from mcp_memory_server.config import get_search_threshold, get_ui_port, is_ui_enabled
 from mcp_memory_server.database import (
     create_memory,
     delete_memory,
@@ -42,8 +42,8 @@ async def list_tools() -> list[Tool]:
                     },
                     "similarity_threshold": {
                         "type": "number",
-                        "description": "Minimum cosine similarity 0-1 (default: 0.7)",
-                        "default": 0.7,
+                        "description": "Minimum cosine similarity 0-1 (default: 0.5, env: MEMORY_SEARCH_THRESHOLD)",
+                        "default": 0.5,
                     },
                 },
                 "required": ["query"],
@@ -138,7 +138,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     if name == "search_memory":
         query = arguments["query"]
         limit = arguments.get("limit", 5)
-        threshold = arguments.get("similarity_threshold", 0.7)
+        threshold = arguments.get("similarity_threshold", get_search_threshold())
         results = search_memories(query, limit=limit, similarity_threshold=threshold)
         result = {"results": results, "count": len(results)}
 
