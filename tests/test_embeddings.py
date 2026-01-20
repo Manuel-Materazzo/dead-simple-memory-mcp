@@ -1,19 +1,10 @@
 """Tests for embedding operations."""
 
-import pytest
-
 from mcp_memory_server.embeddings import (
     blob_to_embedding,
     embedding_to_blob,
     get_embedding,
-    start_model_loading,
 )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def load_model():
-    """Load the embedding model before tests."""
-    start_model_loading()
 
 
 class TestEmbeddings:

@@ -1,12 +1,6 @@
 """Tests for database operations."""
 
-import os
-import tempfile
-from pathlib import Path
-
 import pytest
-
-os.environ["MEMORY_DB_PATH"] = str(Path(tempfile.gettempdir()) / "test_memories.db")
 
 from mcp_memory_server.database import (
     create_memory,
@@ -16,18 +10,12 @@ from mcp_memory_server.database import (
     search_memories,
     update_memory,
 )
-from mcp_memory_server.embeddings import start_model_loading
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_database():
-    """Initialize the database and embedding model before tests."""
-    start_model_loading()
+def setup_database() -> None:
+    """Initialize the database before tests."""
     init_database()
-    yield
-    db_path = Path(os.environ["MEMORY_DB_PATH"])
-    if db_path.exists():
-        db_path.unlink()
 
 
 class TestMemoryOperations:

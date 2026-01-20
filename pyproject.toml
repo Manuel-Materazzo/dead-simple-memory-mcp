@@ -42,6 +42,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/mcp_memory_server/web.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.10"
 strict = true
