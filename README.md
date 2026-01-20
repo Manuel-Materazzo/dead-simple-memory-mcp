@@ -6,6 +6,7 @@ A minimal, self-contained MCP (Model Context Protocol) server for AI agent memor
 
 - **Vector Search**: Find memories using semantic similarity
 - **Duplicate Detection**: Automatically detects similar memories before storing
+- **Web UI**: Built-in browser interface for viewing and managing memories
 - **Zero External Dependencies**: Uses embedded SQLite with sqlite-vec
 - **stdio Transport**: Compatible with LM Studio and other MCP clients
 
@@ -57,6 +58,20 @@ List all memories with pagination.
 **Parameters:**
 - `page` (integer, optional, default=1): Page number (1-indexed)
 - `limit` (integer, optional, default=50): Results per page
+
+## Web UI
+
+The server includes a built-in web interface accessible at `http://localhost:6277` (or your configured port).
+
+**Features:**
+- View all memories with pagination
+- Search memories using vector similarity
+- Create new memories with duplicate detection warnings
+- Edit memories inline
+- Delete memories with confirmation
+- Real-time search with similarity scores
+
+To disable the web UI, set `MEMORY_UI_ENABLED=false`.
 
 ## Configuration
 
