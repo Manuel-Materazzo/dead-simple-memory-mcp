@@ -213,6 +213,16 @@ h1 {
     font-size: 18px;
 }
 
+.modal-small {
+    max-width: 360px;
+    text-align: center;
+}
+
+.modal-small p {
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+}
+
 .modal textarea {
     width: 100%;
     min-height: 120px;

@@ -3,6 +3,7 @@ let currentPage = 1;
 let totalPages = 1;
 let isSearchMode = false;
 let editingId = null;
+let pendingDeleteId = null;
 
 async function fetchMemories(page = 1) {
     const res = await fetch(`${API}?page=${page}&limit=50`);
@@ -124,8 +125,20 @@ function cancelEdit() {
     editingId = null;
 }
 
-async function deleteMemory(id) {
-    if (!confirm('Delete this memory?')) return;
+function deleteMemory(id) {
+    pendingDeleteId = id;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+    pendingDeleteId = null;
+}
+
+async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    closeDeleteModal();
     try {
         const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to delete');
@@ -257,6 +270,12 @@ document.getElementById('nextPage').addEventListener('click', () => fetchMemorie
 
 document.getElementById('addModal').addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) closeModal();
+});
+
+document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
+document.getElementById('confirmDelete').addEventListener('click', confirmDelete);
+document.getElementById('deleteModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeDeleteModal();
 });
 
 // Initialize
