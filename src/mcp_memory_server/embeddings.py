@@ -6,7 +6,7 @@ from typing import Optional
 
 from sentence_transformers import SentenceTransformer
 
-from mcp_memory_server.config import get_embedding_model
+from mcp_memory_server.config import get_embedding_model, is_async_model_loading
 
 _model: Optional[SentenceTransformer] = None
 _model_name: Optional[str] = None
@@ -30,9 +30,16 @@ def _load_model() -> None:
 
 
 def start_model_loading() -> None:
-    """Start loading the embedding model in a background thread."""
-    thread = threading.Thread(target=_load_model, daemon=True)
-    thread.start()
+    """Start loading the embedding model.
+
+    If MEMORY_ASYNC_MODEL_LOADING is true (default), loads in a background daemon thread.
+    If false, loads synchronously (blocking startup).
+    """
+    if is_async_model_loading():
+        thread = threading.Thread(target=_load_model, daemon=True)
+        thread.start()
+    else:
+        _load_model()
 
 
 def get_embedding(text: str) -> list[float]:

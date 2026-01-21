@@ -36,3 +36,8 @@ def get_duplicate_threshold() -> float:
 def get_search_threshold() -> float:
     """Get the search similarity threshold from environment or use default."""
     return float(os.getenv("MEMORY_SEARCH_THRESHOLD", "0.5"))
+
+
+def is_async_model_loading() -> bool:
+    """Check if model loading should be async (background thread). Set to false for blocking."""
+    return os.getenv("MEMORY_ASYNC_MODEL_LOADING", "true").lower() == "true"
