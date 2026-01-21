@@ -207,6 +207,73 @@ h1 {
     border-color: var(--accent-blue);
 }
 
+.memory-metadata {
+    margin-bottom: 12px;
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.metadata-label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.metadata-value {
+    display: block;
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'SF Mono', Consolas, 'Liberation Mono', monospace;
+}
+
+.memory-metadata-edit {
+    margin-bottom: 12px;
+}
+
+.memory-metadata-edit.hidden {
+    display: none;
+}
+
+.metadata-edit-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.metadata-textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: 'SF Mono', Consolas, 'Liberation Mono', monospace;
+    resize: vertical;
+}
+
+.metadata-textarea:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.metadata-input-section {
+    margin-bottom: 16px;
+}
+
+.memory-metadata.hidden {
+    display: none;
+}
+
 .memory-footer {
     display: flex;
     justify-content: space-between;

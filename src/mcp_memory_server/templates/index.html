@@ -51,6 +51,10 @@
         <div class="modal">
             <h2>Add New Memory</h2>
             <textarea id="newMemoryContent" placeholder="Enter memory content..."></textarea>
+            <div class="metadata-input-section">
+                <label class="metadata-edit-label">Metadata (JSON, optional):</label>
+                <textarea id="newMemoryMetadata" class="metadata-textarea" placeholder='{"key": "value"}'></textarea>
+            </div>
             <div id="conflictWarning" class="conflict-warning" style="display: none;"></div>
             <div class="modal-actions">
                 <button class="btn" id="cancelAdd">Cancel</button>

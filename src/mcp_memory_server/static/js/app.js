@@ -48,6 +48,15 @@ function renderMemories(memories, showSimilarity = false) {
                 ${showSimilarity ? `<span class="memory-similarity">${(m.similarity * 100).toFixed(1)}% match</span>` : ''}
             </div>
             <div class="memory-content" id="content-${m.id}">${escapeHtml(m.content)}</div>
+            ${m.metadata ? `
+            <div class="memory-metadata" id="metadata-display-${m.id}">
+                <span class="metadata-label">Metadata:</span>
+                <code class="metadata-value">${escapeHtml(JSON.stringify(m.metadata, null, 2))}</code>
+            </div>` : ''}
+            <div class="memory-metadata-edit hidden" id="metadata-edit-${m.id}">
+                <label class="metadata-edit-label">Metadata (JSON):</label>
+                <textarea class="metadata-textarea" id="metadata-input-${m.id}" placeholder='{"key": "value"}'>${m.metadata ? JSON.stringify(m.metadata, null, 2) : ''}</textarea>
+            </div>
             <div class="memory-footer">
                 <span class="memory-date">Created: ${formatDate(m.created_at)}${m.updated_at !== m.created_at ? ` · Updated: ${formatDate(m.updated_at)}` : ''}</span>
                 <div class="memory-actions">
@@ -71,6 +80,11 @@ function startEdit(id) {
     el.textContent = text;
     el.focus();
 
+    const metadataDisplay = document.getElementById(`metadata-display-${id}`);
+    if (metadataDisplay) metadataDisplay.classList.add('hidden');
+    const metadataEdit = document.getElementById(`metadata-edit-${id}`);
+    if (metadataEdit) metadataEdit.classList.remove('hidden');
+
     const actions = el.closest('.memory-card').querySelector('.memory-actions');
     actions.innerHTML = `
         <button class="btn btn-small" onclick="saveEdit(${id})">Save</button>
@@ -84,6 +98,12 @@ function resetEditingState() {
     if (el) {
         el.contentEditable = false;
         el.classList.remove('editing');
+
+        const metadataDisplay = document.getElementById(`metadata-display-${editingId}`);
+        if (metadataDisplay) metadataDisplay.classList.remove('hidden');
+        const metadataEdit = document.getElementById(`metadata-edit-${editingId}`);
+        if (metadataEdit) metadataEdit.classList.add('hidden');
+
         const card = el.closest('.memory-card');
         if (card) {
             const actions = card.querySelector('.memory-actions');
@@ -104,11 +124,22 @@ async function saveEdit(id) {
         return;
     }
 
+    const metadataInput = document.getElementById(`metadata-input-${id}`);
+    let metadata = null;
+    if (metadataInput && metadataInput.value.trim()) {
+        try {
+            metadata = JSON.parse(metadataInput.value.trim());
+        } catch (e) {
+            showToast('Invalid JSON in metadata field', 'error');
+            return;
+        }
+    }
+
     try {
         const res = await fetch(`${API}/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, metadata })
         });
         if (!res.ok) throw new Error('Failed to update');
         showToast('Memory updated', 'success');
@@ -158,11 +189,22 @@ async function createMemory(force = false) {
         return;
     }
 
+    const metadataInput = document.getElementById('newMemoryMetadata');
+    let metadata = null;
+    if (metadataInput && metadataInput.value.trim()) {
+        try {
+            metadata = JSON.parse(metadataInput.value.trim());
+        } catch (e) {
+            showToast('Invalid JSON in metadata field', 'error');
+            return;
+        }
+    }
+
     try {
         const res = await fetch(API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content, force })
+            body: JSON.stringify({ content, metadata, force })
         });
         const data = await res.json();
 
@@ -201,6 +243,7 @@ function openModal() {
     if (editingId) resetEditingState();
     document.getElementById('addModal').classList.remove('hidden');
     document.getElementById('newMemoryContent').value = '';
+    document.getElementById('newMemoryMetadata').value = '';
     document.getElementById('conflictWarning').style.display = 'none';
     document.getElementById('saveMemory').style.display = '';
     document.getElementById('forceSave').style.display = 'none';
