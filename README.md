@@ -87,6 +87,7 @@ To disable the web UI, set `MEMORY_UI_ENABLED=false`.
 | `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2`          | Embedding model name (any sentence-transformers model) |
 | `MEMORY_DUPLICATE_THRESHOLD` | `0.7`                       | Similarity threshold for duplicate detection |
 | `MEMORY_SEARCH_THRESHOLD` | `0.5`                       | Default similarity threshold for search queries |
+| `MEMORY_ASYNC_MODEL_LOADING` | `true`                      | Load embedding model in background; set to `false` for blocking |
 
 ### Switching Embedding Models
 
