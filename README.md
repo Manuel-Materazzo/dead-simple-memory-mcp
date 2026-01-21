@@ -84,9 +84,24 @@ To disable the web UI, set `MEMORY_UI_ENABLED=false`.
 | `MEMORY_DB_PATH` | `~/.mcp-memory/memories.db` | SQLite database location |
 | `MEMORY_UI_PORT` | `6277`                      | Web UI port |
 | `MEMORY_UI_ENABLED` | `true`                      | Enable/disable web UI |
-| `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2`          | Embedding model name |
+| `MEMORY_EMBEDDING_MODEL` | `all-MiniLM-L6-v2`          | Embedding model name (any sentence-transformers model) |
 | `MEMORY_DUPLICATE_THRESHOLD` | `0.7`                       | Similarity threshold for duplicate detection |
 | `MEMORY_SEARCH_THRESHOLD` | `0.5`                       | Default similarity threshold for search queries |
+
+### Switching Embedding Models
+
+You can switch to any [sentence-transformers](https://huggingface.co/sentence-transformers) model by setting `MEMORY_EMBEDDING_MODEL`. When the server starts with a different model than previously used:
+
+1. **Automatic backup** is created: `memories_backup_{old_model}_{timestamp}.db`
+2. **All memories are re-embedded** using the new model
+3. The vector index is recreated with the correct dimensions
+
+This allows you to upgrade models or switch between models without losing data. Backups are kept in the same folder as your database, so you can restore if needed.
+
+**Example models:**
+- `all-MiniLM-L6-v2` (default, 384 dims, fast)
+- `all-mpnet-base-v2` (768 dims, higher quality)
+- `paraphrase-multilingual-MiniLM-L12-v2` (384 dims, multilingual)
 
 ### LM Studio Configuration (mcp.json)
 
