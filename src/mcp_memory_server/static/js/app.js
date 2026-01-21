@@ -4,6 +4,7 @@ let totalPages = 1;
 let isSearchMode = false;
 let editingId = null;
 let pendingDeleteId = null;
+let pendingImportData = null;
 
 async function fetchMemories(page = 1) {
     const res = await fetch(`${API}?page=${page}&limit=50`);
@@ -354,6 +355,171 @@ document.getElementById('cancelDelete').addEventListener('click', closeDeleteMod
 document.getElementById('confirmDelete').addEventListener('click', confirmDelete);
 document.getElementById('deleteModal').addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) closeDeleteModal();
+});
+
+// Export/Import functionality
+async function exportMemories() {
+    try {
+        showToast('Exporting memories...', 'info');
+        const res = await fetch('/api/export');
+        const data = await res.json();
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `memories-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast(`Exported ${data.count} memories`, 'success');
+    } catch (e) {
+        showToast('Failed to export memories', 'error');
+    }
+}
+
+function openImportModal() {
+    document.getElementById('importModal').classList.remove('hidden');
+    document.getElementById('importPreview').innerHTML = '<p>No file selected</p>';
+    document.getElementById('confirmImport').disabled = true;
+    document.getElementById('clearBeforeImport').checked = false;
+    document.getElementById('clearWarning').style.display = 'none';
+    document.getElementById('importProgress').style.display = 'none';
+    pendingImportData = null;
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').classList.add('hidden');
+    pendingImportData = null;
+}
+
+function handleImportFile(file) {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            let memories = [];
+            
+            if (Array.isArray(data)) {
+                memories = data;
+            } else if (data.memories && Array.isArray(data.memories)) {
+                memories = data.memories;
+            } else {
+                throw new Error('Invalid format');
+            }
+            
+            if (memories.length === 0) {
+                document.getElementById('importPreview').innerHTML = '<p>No memories found in file</p>';
+                document.getElementById('confirmImport').disabled = true;
+                return;
+            }
+            
+            pendingImportData = memories;
+            
+            const sampleItems = memories.slice(0, 3).map(m => {
+                const content = m.content || '';
+                const preview = content.length > 80 ? content.substring(0, 80) + '...' : content;
+                return `<div class="preview-item">${escapeHtml(preview)}</div>`;
+            }).join('');
+            
+            document.getElementById('importPreview').innerHTML = `
+                <div class="preview-stats">
+                    <span class="preview-stat"><strong>${memories.length}</strong> memories</span>
+                </div>
+                <div class="preview-sample">
+                    <div class="preview-sample-title">Preview:</div>
+                    ${sampleItems}
+                    ${memories.length > 3 ? `<div class="preview-item" style="color: var(--text-secondary);">... and ${memories.length - 3} more</div>` : ''}
+                </div>
+            `;
+            document.getElementById('confirmImport').disabled = false;
+            
+        } catch (err) {
+            document.getElementById('importPreview').innerHTML = '<p style="color: var(--accent-red);">Invalid JSON file format</p>';
+            document.getElementById('confirmImport').disabled = true;
+            pendingImportData = null;
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function confirmImport() {
+    if (!pendingImportData || pendingImportData.length === 0) return;
+    
+    const clearExisting = document.getElementById('clearBeforeImport').checked;
+    const progressDiv = document.getElementById('importProgress');
+    const progressFill = document.getElementById('importProgressFill');
+    const progressText = document.getElementById('importProgressText');
+    
+    progressDiv.style.display = '';
+    progressFill.style.width = '0%';
+    progressText.textContent = 'Starting import...';
+    document.getElementById('confirmImport').disabled = true;
+    document.getElementById('cancelImport').disabled = true;
+    
+    try {
+        progressFill.style.width = '50%';
+        progressText.textContent = `Importing ${pendingImportData.length} memories (re-embedding)...`;
+        
+        const res = await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                memories: pendingImportData,
+                clear_existing: clearExisting
+            })
+        });
+        
+        const result = await res.json();
+        progressFill.style.width = '100%';
+        
+        if (result.status === 'success') {
+            let message = `Imported ${result.imported} memories`;
+            if (result.cleared > 0) {
+                message += ` (cleared ${result.cleared} existing)`;
+            }
+            if (result.total_errors > 0) {
+                message += `, ${result.total_errors} errors`;
+            }
+            showToast(message, 'success');
+            closeImportModal();
+            fetchMemories(1);
+            fetchStats();
+        } else {
+            throw new Error('Import failed');
+        }
+        
+    } catch (e) {
+        showToast('Failed to import memories', 'error');
+        progressDiv.style.display = 'none';
+    }
+    
+    document.getElementById('confirmImport').disabled = false;
+    document.getElementById('cancelImport').disabled = false;
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportMemories);
+document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+});
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        openImportModal();
+        handleImportFile(e.target.files[0]);
+        e.target.value = '';
+    }
+});
+document.getElementById('cancelImport').addEventListener('click', closeImportModal);
+document.getElementById('confirmImport').addEventListener('click', confirmImport);
+document.getElementById('importModal').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) closeImportModal();
+});
+document.getElementById('clearBeforeImport').addEventListener('change', (e) => {
+    document.getElementById('clearWarning').style.display = e.target.checked ? '' : 'none';
 });
 
 // Initialize

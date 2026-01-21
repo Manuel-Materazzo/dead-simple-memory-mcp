@@ -38,6 +38,14 @@
             <button class="btn btn-primary" id="addBtn">+ Add Memory</button>
         </div>
 
+        <div class="toolbar">
+            <span class="toolbar-label">Data Operations:</span>
+            <button class="btn btn-small" id="exportBtn" title="Export memories">↓ Export</button>
+            <button class="btn btn-small" id="importBtn" title="Import memories">↑ Import</button>
+        </div>
+        
+        <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
         <div id="memoryList" class="memory-list"></div>
 
         <div id="pagination" class="pagination" style="display: none;">
@@ -71,6 +79,35 @@
             <div class="modal-actions">
                 <button class="btn" id="cancelDelete">Cancel</button>
                 <button class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="importModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Import Memories</h2>
+            <div id="importPreview" class="import-preview">
+                <p>No file selected</p>
+            </div>
+            <div class="toggle-section">
+                <label class="toggle-label">
+                    <input type="checkbox" id="clearBeforeImport">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">Clear existing memories before import</span>
+                </label>
+                <p class="toggle-warning" id="clearWarning" style="display: none;">
+                    ⚠️ This will permanently delete all current memories
+                </p>
+            </div>
+            <div id="importProgress" class="import-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="importProgressFill"></div>
+                </div>
+                <span id="importProgressText">Importing...</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelImport">Cancel</button>
+                <button class="btn btn-primary" id="confirmImport" disabled>Import</button>
             </div>
         </div>
     </div>

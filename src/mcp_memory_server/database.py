@@ -317,3 +317,105 @@ def _format_bytes(size_bytes: int) -> str:
             return f"{size:.1f} {unit}" if unit != "B" else f"{int(size)} {unit}"
         size /= 1024
     return f"{size:.1f} TB"
+
+
+def export_memories() -> list[dict[str, Any]]:
+    """Export all memories as a list of dictionaries (without embeddings)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, content, created_at, updated_at, metadata
+        FROM memories
+        ORDER BY id ASC
+    """)
+
+    memories = []
+    for row in cursor.fetchall():
+        memories.append({
+            "id": row["id"],
+            "content": row["content"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "metadata": json.loads(row["metadata"]) if row["metadata"] else None,
+        })
+
+    conn.close()
+    return memories
+
+
+def clear_all_memories() -> int:
+    """Delete all memories from the database. Returns count of deleted memories."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as total FROM memories")
+    count: int = cursor.fetchone()["total"]
+
+    cursor.execute("DELETE FROM vec_memories")
+    cursor.execute("DELETE FROM memories")
+
+    conn.commit()
+    conn.close()
+    return count
+
+
+def import_memories(
+    memories: list[dict[str, Any]], clear_existing: bool = False
+) -> dict[str, Any]:
+    """Import memories from a list, re-embedding each one.
+
+    Args:
+        memories: List of memory dicts with 'content' and optional 'metadata'
+        clear_existing: If True, delete all existing memories before import
+
+    Returns:
+        Dict with import statistics
+    """
+    cleared_count = 0
+    if clear_existing:
+        cleared_count = clear_all_memories()
+
+    imported_count = 0
+    errors = []
+
+    for i, memory in enumerate(memories):
+        try:
+            content = memory.get("content")
+            if not content:
+                errors.append({"index": i, "error": "Missing content field"})
+                continue
+
+            metadata = memory.get("metadata")
+            embedding = get_embedding(content)
+            embedding_blob = embedding_to_blob(embedding)
+            metadata_json = json.dumps(metadata) if metadata else None
+
+            conn = get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "INSERT INTO memories (content, embedding, metadata) VALUES (?, ?, ?)",
+                (content, embedding_blob, metadata_json),
+            )
+            memory_id = cursor.lastrowid
+
+            cursor.execute(
+                "INSERT INTO vec_memories (rowid, embedding) VALUES (?, ?)",
+                (memory_id, embedding_blob),
+            )
+
+            conn.commit()
+            conn.close()
+            imported_count += 1
+
+        except Exception as e:
+            errors.append({"index": i, "error": str(e)})
+
+    return {
+        "status": "success",
+        "imported": imported_count,
+        "cleared": cleared_count,
+        "errors": errors,
+        "total_errors": len(errors),
+    }

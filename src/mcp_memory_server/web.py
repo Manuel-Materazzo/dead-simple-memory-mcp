@@ -13,7 +13,9 @@ from starlette.requests import Request
 from mcp_memory_server.database import (
     create_memory,
     delete_memory,
+    export_memories,
     get_statistics,
+    import_memories,
     list_memories,
     search_memories,
     update_memory,
@@ -37,6 +39,11 @@ class MemoryCreate(BaseModel):
 class MemoryUpdate(BaseModel):
     content: str
     metadata: Optional[dict[str, Any]] = None
+
+
+class MemoryImport(BaseModel):
+    memories: list[dict[str, Any]]
+    clear_existing: bool = False
 
 
 @app.get("/api/memories")
@@ -102,6 +109,28 @@ async def health() -> dict[str, str]:
 async def api_stats() -> dict[str, Any]:
     """Get memory database statistics."""
     return get_statistics()
+
+
+@app.get("/api/export")
+async def api_export_memories() -> dict[str, Any]:
+    """Export all memories as JSON."""
+    memories = export_memories()
+    return {
+        "version": 1,
+        "exported_at": __import__("datetime").datetime.now().isoformat(),
+        "count": len(memories),
+        "memories": memories,
+    }
+
+
+@app.post("/api/import")
+async def api_import_memories(data: MemoryImport) -> dict[str, Any]:
+    """Import memories from JSON, re-embedding each one."""
+    result = import_memories(
+        memories=data.memories,
+        clear_existing=data.clear_existing,
+    )
+    return result
 
 
 @app.get("/", response_class=HTMLResponse)
