@@ -70,6 +70,8 @@ The server includes a built-in web interface accessible at `http://localhost:627
 - Edit memories inline
 - Delete memories with confirmation
 - Real-time search with similarity scores
+- Export all memories to JSON
+- Import memories from JSON with automatic re-embedding
 
 To disable the web UI, set `MEMORY_UI_ENABLED=false`.
 
