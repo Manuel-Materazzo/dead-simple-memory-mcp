@@ -1,16 +1,16 @@
 """Database management for memory storage."""
 
 import json
+import shutil
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 import sqlite_vec
 
 from mcp_memory_server.config import get_db_path, get_duplicate_threshold
-from mcp_memory_server.embeddings import embedding_to_blob, get_embedding
-
-EMBEDDING_DIM = 384
+from mcp_memory_server.embeddings import embedding_to_blob, get_embedding, get_model_info
 
 
 def get_connection() -> sqlite3.Connection:
@@ -28,6 +28,8 @@ def get_connection() -> sqlite3.Connection:
 
 def init_database() -> None:
     """Initialize the database schema."""
+    model_name, embedding_dim = get_model_info()
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -43,10 +45,144 @@ def init_database() -> None:
     """)
 
     cursor.execute("""
-        CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
-            embedding float[384]
+        CREATE TABLE IF NOT EXISTS db_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         )
     """)
+
+    stored_model = _get_meta(cursor, "embedding_model")
+    stored_dim = _get_meta(cursor, "embedding_dimension")
+
+    if stored_model is None:
+        _set_meta(cursor, "embedding_model", model_name)
+        _set_meta(cursor, "embedding_dimension", str(embedding_dim))
+        conn.commit()
+        _ensure_vec_table(cursor, embedding_dim)
+        conn.commit()
+        conn.close()
+        return
+
+    if stored_model != model_name or stored_dim != str(embedding_dim):
+        conn.close()
+        _handle_model_change(model_name, embedding_dim, stored_model, stored_dim)
+        return
+
+    _ensure_vec_table(cursor, embedding_dim)
+    conn.commit()
+    conn.close()
+
+
+def _get_meta(cursor: sqlite3.Cursor, key: str) -> Optional[str]:
+    """Get a metadata value from db_meta table."""
+    cursor.execute("SELECT value FROM db_meta WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    return row["value"] if row else None
+
+
+def _set_meta(cursor: sqlite3.Cursor, key: str, value: str) -> None:
+    """Set a metadata value in db_meta table."""
+    cursor.execute(
+        "INSERT OR REPLACE INTO db_meta (key, value) VALUES (?, ?)",
+        (key, value),
+    )
+
+
+def _ensure_vec_table(cursor: sqlite3.Cursor, dim: int) -> None:
+    """Ensure vec_memories virtual table exists with correct dimensions."""
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='vec_memories'"
+    )
+    if cursor.fetchone():
+        return
+    cursor.execute(f"""
+        CREATE VIRTUAL TABLE vec_memories USING vec0(
+            embedding float[{dim}]
+        )
+    """)
+
+
+def _handle_model_change(
+    new_model: str, new_dim: int, old_model: Optional[str], old_dim: Optional[str]
+) -> None:
+    """Handle embedding model change: backup and re-embed all memories."""
+    import sys
+
+    db_path = get_db_path()
+
+    print(
+        f"[mcp-memory] Embedding model changed: {old_model} -> {new_model}",
+        file=sys.stderr,
+    )
+
+    _create_backup(db_path, old_model or "unknown")
+
+    print("[mcp-memory] Re-embedding all memories...", file=sys.stderr)
+    _reembed_all_memories(new_model, new_dim)
+    print("[mcp-memory] Re-embedding complete.", file=sys.stderr)
+
+
+def _create_backup(db_path: Path, model_name: str) -> Path:
+    """Create a backup of the database before re-embedding.
+
+    Backup naming: memories_backup_{model_name}_{timestamp}.db
+    """
+    import sys
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model_name = model_name.replace("/", "_").replace("\\", "_")
+    backup_name = f"memories_backup_{safe_model_name}_{timestamp}.db"
+    backup_path = db_path.parent / backup_name
+
+    shutil.copy2(db_path, backup_path)
+    print(f"[mcp-memory] Backup created: {backup_path}", file=sys.stderr)
+    return backup_path
+
+
+def _reembed_all_memories(new_model: str, new_dim: int) -> None:
+    """Re-embed all memories with the new model."""
+    import sys
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, content FROM memories")
+    memories = cursor.fetchall()
+    total = len(memories)
+
+    if total == 0:
+        _set_meta(cursor, "embedding_model", new_model)
+        _set_meta(cursor, "embedding_dimension", str(new_dim))
+        cursor.execute("DROP TABLE IF EXISTS vec_memories")
+        _ensure_vec_table(cursor, new_dim)
+        conn.commit()
+        conn.close()
+        return
+
+    cursor.execute("DROP TABLE IF EXISTS vec_memories")
+    _ensure_vec_table(cursor, new_dim)
+
+    for i, row in enumerate(memories, 1):
+        memory_id = row["id"]
+        content = row["content"]
+
+        embedding = get_embedding(content)
+        embedding_blob = embedding_to_blob(embedding)
+
+        cursor.execute(
+            "UPDATE memories SET embedding = ? WHERE id = ?",
+            (embedding_blob, memory_id),
+        )
+        cursor.execute(
+            "INSERT INTO vec_memories (rowid, embedding) VALUES (?, ?)",
+            (memory_id, embedding_blob),
+        )
+
+        if i % 100 == 0 or i == total:
+            print(f"[mcp-memory] Re-embedded {i}/{total} memories...", file=sys.stderr)
+
+    _set_meta(cursor, "embedding_model", new_model)
+    _set_meta(cursor, "embedding_dimension", str(new_dim))
 
     conn.commit()
     conn.close()
@@ -270,7 +406,9 @@ def list_memories(page: int = 1, limit: int = 50) -> dict[str, Any]:
 
 def get_statistics() -> dict[str, Any]:
     """Get memory database statistics."""
-    from mcp_memory_server.config import get_db_path, get_embedding_model
+    from mcp_memory_server.config import get_db_path
+
+    model_name, embedding_dim = get_model_info()
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -304,8 +442,8 @@ def get_statistics() -> dict[str, Any]:
         "storage_bytes": storage_bytes,
         "storage_human": _format_bytes(storage_bytes),
         "latest_activity": latest_activity,
-        "embedding_model": get_embedding_model(),
-        "embedding_dimensions": EMBEDDING_DIM,
+        "embedding_model": model_name,
+        "embedding_dimensions": embedding_dim,
     }
 
 

@@ -9,16 +9,20 @@ from sentence_transformers import SentenceTransformer
 from mcp_memory_server.config import get_embedding_model
 
 _model: Optional[SentenceTransformer] = None
+_model_name: Optional[str] = None
+_model_dimension: Optional[int] = None
 _model_ready = threading.Event()
 _model_error: Optional[Exception] = None
 
 
 def _load_model() -> None:
     """Load the embedding model in the background."""
-    global _model, _model_error
+    global _model, _model_error, _model_name, _model_dimension
     try:
         model_name = get_embedding_model()
         _model = SentenceTransformer(model_name)
+        _model_name = model_name
+        _model_dimension = _model.get_sentence_embedding_dimension()
         _model_ready.set()
     except Exception as e:
         _model_error = e
@@ -61,3 +65,24 @@ def blob_to_embedding(blob: bytes) -> list[float]:
 def is_model_ready() -> bool:
     """Check if the model is ready for use."""
     return _model_ready.is_set() and _model_error is None
+
+
+def get_model_info() -> tuple[str, int]:
+    """Get the loaded model name and dimension. Blocks until model is ready.
+
+    Returns:
+        Tuple of (model_name, embedding_dimension)
+    """
+    _model_ready.wait()
+    if _model_error:
+        raise _model_error
+    if _model_name is None or _model_dimension is None:
+        raise RuntimeError("Model not loaded")
+    return _model_name, _model_dimension
+
+
+def wait_for_model() -> None:
+    """Block until the embedding model is ready."""
+    _model_ready.wait()
+    if _model_error:
+        raise _model_error
